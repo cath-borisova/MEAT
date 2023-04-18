@@ -2,13 +2,13 @@ package simulator.src;
 
 public class GridLocation {
     LocationType type;
-    double cost;
+    int cost;
     
     public GridLocation(LocationType type) {
         this.type = type;
     }
 
-    public GridLocation(LocationType type, double cost) {
+    public GridLocation(LocationType type, int cost) {
         this.type = type;
         this.cost = cost;
     }
@@ -25,7 +25,19 @@ public class GridLocation {
         return this.cost;
     }
 
-    public void setCost(double cost) {
+    public void setCost(int cost) {
         this.cost = cost;
+    }
+
+    @Override
+    public String toString() {
+        switch (this.type) {
+            case AGENT: return "A";
+            case OBSTACLE: return "/";
+            case EMPTY: return Integer.toString(0);
+            case RUBBLE: return Integer.toString(cost);
+            case GOAL: return "G";
+            default: return "";
+        }
     }
 }

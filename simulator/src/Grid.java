@@ -5,10 +5,10 @@ import java.util.Random;
 public class Grid {
     GridLocation[][] world;
     final int OBSTACLE_COST = 10000;
+    final int MAX_RUBBLE = 100;
+    final int MIN_RUBBLE = 1;
     final int MAX_SIZE = 25;
     final int MIN_SIZE = 5;
-    final double MAX_RUBBLE = 100;
-    final double MIN_RUBBLE = 1;
 
     public Grid(long seed) {
         Random rng = new Random(seed);
@@ -39,7 +39,7 @@ public class Grid {
                             break;
                         case RUBBLE:
                             this.world[i][j] = new GridLocation(
-                                type, MIN_RUBBLE + rng.nextDouble() * (MAX_RUBBLE - MIN_RUBBLE)
+                                type, rng.nextInt(MAX_RUBBLE - MIN_RUBBLE) + MIN_RUBBLE
                             );
                             break;
                         default: // ONLY EMPTY SHOULD MAKE IT HERE
@@ -57,5 +57,18 @@ public class Grid {
 
     public void setLocation(int x, int y, GridLocation location) {
         this.world[x][y] = location;
+    }
+
+    @Override
+    public String toString() {
+        String res = "";
+        for (GridLocation[] row : world) {
+            StringBuilder rowString = new StringBuilder();
+            for (GridLocation location : row) {
+                rowString.append(String.format("%-4s", location.toString()));
+            }
+            res += rowString.toString() + "\n";
+        }
+        return res;
     }
 }
