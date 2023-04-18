@@ -1,4 +1,5 @@
-package simulator.src;
+package simulator.src.Algorithms;
+import simulator.src.*;
 import java.util.*;
 public class BFS implements Algo{
 
@@ -9,17 +10,17 @@ public class BFS implements Algo{
     }
 
     public Coords breadthFirstSearch(Grid grid, int startX, int startY, int desX, int desY){
-        Queue<Coords> q = new LinkedList<>();
+        Queue<LinkedList<Coords>> q = new LinkedList<>();
         boolean [] [] visited = new boolean [grid.world.length][grid.world[0].length];
         q.add(new Coords(startX, startY));
         visited[startX][startY] = true;
 
         while(!q.isEmpty()){
             
-            Coords curr = q.remove();
-            int x = curr.x;
+            LinkedList<Coords> path = q.remove();
+            int x = path[path.size()-1];
             int y = curr.y;
-            if(curr.x == startX && curr.y == startY){
+            if(curr.x == desX && curr.y == desY){ //found goal
                 break;
             }
 
