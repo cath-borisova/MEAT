@@ -1,7 +1,7 @@
 package simulator.src;
 
 public class Coords {
-    int x, y;
+    public int x, y;
     
     public Coords(int x, int y){
         this.x = x;
