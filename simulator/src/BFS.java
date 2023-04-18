@@ -2,11 +2,12 @@ package simulator.src;
 import java.util.*;
 public class BFS implements Algo{
     Queue<Coords> q = new LinkedList<>();
-    boolean [] [] visited = new int [grid.length][grid.length[0]];
+    boolean [] [] visited;
+    Coords coords;
 
-    public int [] nextMove(int [] grid, int curX, int curY, int desX, int desY){
+    public Coords nextMove(Grid grid, int curX, int curY, int desX, int desY){
+        visited = new boolean [grid.world.length][grid.world[0].length];
         breadthFirstSearch(curX, curY, desX, desY);
-        int [] coords = new int[2];
         return coords;
     }
 
