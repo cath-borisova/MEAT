@@ -1,3 +1,5 @@
+package simulator.src;
+
 public class Agent {
     public int visRadius;
     public int curX;

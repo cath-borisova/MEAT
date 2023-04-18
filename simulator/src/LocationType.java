@@ -1,3 +1,4 @@
+package simulator.src;
 public enum LocationType {
     AGENT,
     OBSTACLE,

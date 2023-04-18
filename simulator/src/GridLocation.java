@@ -1,3 +1,4 @@
+package simulator.src;
 public class GridLocation {
     LocationType type;
     double cost;

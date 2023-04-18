@@ -1,4 +1,5 @@
-public class Dijkstras implements Algo{
+package simulator.src;
+public class BFS implements Algo{
     public int [] NextMove(int [] grid, int curX, int curY, int desX, int desY){
         int [] coords = new int[2];
         return coords;

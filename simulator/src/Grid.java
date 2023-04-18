@@ -1,3 +1,5 @@
+package simulator.src;
+
 import java.util.Random;
 
 public class Grid {
