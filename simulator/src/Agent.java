@@ -6,18 +6,20 @@ public class Agent {
     public int curY;
     public int goalX;
     public int goalY;
+    Grid grid;
 
-    public Agent(int visRadius, int curX, int curY, int goalX, int goalY){
+    public Agent(int visRadius, int curX, int curY, int goalX, int goalY, Grid grid){
         this.visRadius = visRadius;
         this.curX = curX;
         this.curY = curY;
         this.goalX = goalX;
         this.goalY = goalY;
+        this.grid = grid;
     }
 
     public void Move(Algo algorithm){
-        int [] new_pos = algorithm.NextMove(grid, curX, curY, goalX, goalY);
-        grid.setLoc(new_pos[0], new_pos[1], grid.getLoc(curX, curY));
+        Coords new_pos = algorithm.nextMove(grid, curX, curY, goalX, goalY);
+        grid.setLocation(new_pos.x, new_pos.y, grid.getLocation(curX, curY));
         //empty the original spot?
     }
 }
