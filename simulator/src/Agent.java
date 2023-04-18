@@ -2,24 +2,20 @@ package simulator.src;
 
 public class Agent {
     public int visRadius;
-    public int curX;
-    public int curY;
-    public int goalX;
-    public int goalY;
+    public Coords initial;
+    public Coords goal;
     Grid grid;
 
     public Agent(int visRadius, int curX, int curY, int goalX, int goalY, Grid grid){
         this.visRadius = visRadius;
-        this.curX = curX;
-        this.curY = curY;
-        this.goalX = goalX;
-        this.goalY = goalY;
+        initial = new Coords(curX, curY);
+        goal = new Coords(goalX, goalY);
         this.grid = grid;
     }
 
     public void Move(Algo algorithm){
-        Coords new_pos = algorithm.nextMove(grid, curX, curY, goalX, goalY, visRadius);
-        grid.setLocation(new_pos.x, new_pos.y, grid.getLocation(curX, curY));
+        Coords new_pos = algorithm.nextMove(grid, initial, goal, visRadius);
+        grid.setLocation(new_pos.x, new_pos.y, grid.getLocation(initial.x, initial.y));
         //empty the original spot?
     }
 }
