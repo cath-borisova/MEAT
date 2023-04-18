@@ -4,7 +4,6 @@ import java.util.Random;
 
 public class Grid {
     GridLocation[][] world;
-
     final int OBSTACLE_COST = 10000;
     final int MAX_SIZE = 25;
     final int MIN_SIZE = 5;
@@ -18,15 +17,17 @@ public class Grid {
         this.world = new GridLocation[rows][columns];
 
         // Set agent location
-        int agentX = rng.nextInt(rows);
-        int agentY = rng.nextInt(columns);
-        this.world[agentX][agentY] = new GridLocation(LocationType.AGENT, 0);
+        Coords agentPos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
+        this.world[agentPos.x][agentPos.y] = new GridLocation(LocationType.AGENT, 0);
 
         // Set goal location (could generate same location as agent)
-        int goalX = rng.nextInt(rows);
-        int goalY = rng.nextInt(columns);
-        this.world[goalX][goalY] = new GridLocation(LocationType.GOAL, 0);
+        Coords goalPos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
+        while (agentPos.equals(goalPos)) {
+            goalPos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
+        }
+        this.world[goalPos.x][goalPos.y] = new GridLocation(LocationType.GOAL, 0);
         
+        // Randomize the map
         LocationType[] options = {LocationType.EMPTY, LocationType.OBSTACLE, LocationType.RUBBLE};
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
