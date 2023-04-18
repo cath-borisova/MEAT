@@ -1,0 +1,516 @@
+<!-- vim: set syntax=markdown: -->
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+<link rel="stylesheet" href="css/journal.css?">
+<style>
+@media (max-width: 576px) {
+  body {
+    position: absolute;
+    left: 0;
+    margin-left: 0;
+  }
+  .md .longTOC {
+    display: none;
+  }
+}
+</style>
+
+
+# Formal specification
+
+*This is the formal specification of the Battlecode 2023 game.* Current version: *3.0.14*
+
+**Welcome to Battlecode 2023: Tempest.**
+
+This is a high-level overview of this year's game. It is highly recommended to read this entire document before you begin writing bots.
+
+*This document and the game it describes may be tweaked as the competition progresses. We'll try to keep changes to a minimum, but may have to make modifications to keep the game balanced. Any changes will be announced in the official Discord channel. You may find a Changelog at the bottom of this document.*
+
+# Background
+
+Lightning booms in the distance and mountains crack as they shift about. Rampant anomalies destroy the very fabric of reality, spurred by the misuse of mutation and alchemy. In a last ditch effort to save humanity, alchemists have torn open unstable portals to a new universe filled with beautiful floating islands and time-bending tempests.
+
+To anchor their dying universe to this bountiful world, humanity must take to the skies and explore the mysterious laws that govern them. But you are not alone – escapees from another reality have fled to this world as well and seek to take it for themselves. The battle of realities has begun, and only one will survive. 
+
+# Objective
+
+In **Battlecode: Tempest**, you will write code to control your faction of robots, in a dangerous battle to conquer the sky islands of the world.
+
+The first faction to conquer 75% of the sky islands wins the battle. Islands are conquered by placing a reality anchor on them, and reality anchors are crafted at each factions headquarters. Each player begins with several headquarters which can create robots, craft anchors, and store resources.
+
+Good luck!
+
+# Map overview
+
+Each Battlecode game will be played on a map. The map is a discrete 2-dimensional rectangular grid, of size ranging between 20×20 and 60×60 inclusive. The bottom-left corner of the map will have coordinates (0, 0); coordinates increase East (right) and North (up). Coordinates on the map are represented as `MapLocation` objects holding the `x` and `y`  coordinates of the location.
+
+In order to prevent maps from favoring one player over another, it is guaranteed that the world is symmetric either by rotation or reflection.
+
+**Note that throughout this document there are mentions of “units” on the map. These units correspond to squared Euclidean distance. For example, a vision range of 36 units means that the robot can see a MapLocation within a circle of radius up to 6 tiles away.**
+
+## Passability
+
+Due to dangerous weather, each square of the map is marked as either impassable or passable. Impassable squares are covered by heavy storms and anomalous hurricanes, and cannot be moved into. Passable squares have clear skies, and can be freely moved through. These squares stay fixed throughout the game.
+
+## Clouds and Currents
+
+The magical winds contain time-bending properties that affect robots that pass through them. These winds cannot pass through impassable squares due to their anomalous weather. 
+
+Time accelerating directional currents flow throughout the map, pushing robots in a specified direction. Robots in a current will be forced to move in the direction of the current at the end of the turn, applied after existing robot movement. Currents will usually appear together on the map in lines or other shapes. **Each current must flow into a different square.**
+
+Time decelerating clouds also appear throughout the map, obscuring vision and slowing down robots within them. When a robot moves into a cloud, it becomes obscured, preventing enemy robots from seeing it with its normal vision radius. Instead, a vision range of 4 units is applied to sense obscured robots. Obscured robots also receive impaired vision, giving them a similar vision range of 4 units. While obscured robots can avoid detection, they receive an increase of 20% on their movement and action cooldowns (moving and acting more slowly), stacking with other time-bending effects. Movements and action cooldowns are defined further down. **Clouds and currents cannot be on the same squares.** 
+
+**Note that all stacking of time-bending effects occurs additively.**
+
+## Islands, Headquarters, and Wells
+
+Certain areas of the map are designated as *sky islands*. Islands appear as groups of connected squares, each group composing a single island. To fully anchor your faction’s universe and win the game, your faction must have reality anchors on **75%** or more of the islands. Once this condition has been fulfilled, your faction will instantly win the game. Sky islands are passable squares. 
+
+There will be between 4 and 35 (inclusive) sky islands spread across the map, and each island is guaranteed to have an area of at most 20.  
+
+Each team has 1-4 fixed *headquarters*. Headquarters cannot be moved or destroyed, as they hold the dimensional tears connecting universes. Robots and reality anchors are created at headquarters. **Robots cannot move over headquarters**. A headquarter cannot be located on a current. At the end of each round, headquarters deal 4 damage to every enemy robot within action radius.
+
+*Resource wells* appear throughout the map and contain an infinite amount of a specific resource type. They cannot be moved or destroyed. No currents, headquarters, or impassable squares can be located on a well. **Robots can travel over wells.** 
+
+# Resources
+
+The core resources are adamantium (Ad), mana (Mn), and elixir (Ex). Each headquarter has its own isolated stockpile of these resources, and constructing robots/reality anchors subtracts from this stockpile. Collecting and bringing back resources for your headquarters enables you to amass a larger and more powerful army of robots. **Resources are not automatically usable when a carrier collects them - they must be carried back to a headquarter.**
+
+There are resource wells scattered around the map, each of a specific resource type. Wells contain an infinite amount of their specified resource, which can be drawn from them by carrier robots located on the well or one of the 8 neighboring squares. Elixir wells do not naturally spawn. Each headquarter will have at least one adamantium well located within 100 units of them. All maps are guaranteed to have at least one adamantium well and one mana well. 
+
+Wells will undergo a transformation if the proper conditions are met. By default, carriers can collect from wells at a rate of 1 kg/action. If 1400 kg of the same resource is thrown into the well (adamantium for an adamantium well, etc.), the well will upgrade, allowing carriers to draw from them at a higher rate of 3 kg/action. Alternatively, if 600 kg of the opposite resource is thrown into the well, the well will transform into an elixir well. Note that only adamantium and mana wells can transform into elixir wells, and the new elixir well will no longer produce its original resource. 
+
+For any given map, wells of a specific type cannot constitute more than 4% of the map’s area. It is also guaranteed that all Adamantium wells will be located within 100 units of a Mana well and vice versa. 
+
+Every 5 rounds, each headquarter will naturally produce 6 kg of adamantium and 6 kg of mana, automatically adding these resources to its reserves. Both teams start the game with 200 kg of adamantium and 200 kg of mana in each headquarter. Resource costs for robot construction can be found in the in-depth section further below.
+
+# Robots
+
+The Battlecode world involves many robots of different kinds. All robots can perform actions such as moving, sensing, and communicating with each other. In each battle, your robots will face one opposing enemy team.
+
+The game is turn-based and divided into **rounds**. In each round, every robot gets a **turn** in which it gets a chance to run code and take actions. Code that a robot runs costs **bytecodes**, a measure of computational resources. A robot only has a predetermined amount of bytecodes available per turn, after which the robot's turn is immediately ended and computations are resumed on its next turn. If your robot has finished its turn, it should call `Clock.yield()` to wait for the next turn to begin.
+
+All robots have a certain amount of HP (also known as hitpoints, health, life, or such). When a robot's HP reaches zero, the robot is immediately removed from the game.
+
+Robots are assigned unique random IDs no smaller than 10,000, except for your headquarters.
+
+Robots interact with only their nearby surroundings through sensing, moving, and special abilities. Each robot runs an independent copy of your code. Robots will be unable to share static variables (they will each have their own copy), because they are run in separate JVMs.
+
+Two or more robots may not be on the same square. When their movement cooldown is over, robots can move onto any of the 8 neighboring squares. 
+
+## Headquarters
+
+Headquarters store resources, spawn robots, and create reality anchors. Each headquarter can store an infinite amount of resources and anchors. Headquarters can spawn robots using their stored resources within an action radius defined in **Robots in-depth**, and carriers can deposit and receive resources and anchors when located on one of the eight neighboring squares. Headquarters cannot be moved, created, or destroyed.
+
+## Carriers
+
+Carriers are produced with 50 kg of Ad. Upon creation, their inventory is empty. They can hold a maximum of 40 kg of material. The movement speed of a Carrier is dependent on the quantity the robot is carrying. Specifically, when a Carrier stores $m$ kg of materials, its movement cooldown is $\left\lfloor\left(5+\frac{3m}{8}\right)\right\rfloor$
+
+Carriers are the only robots that can move resources and anchors and interact with resource wells, headquarters, and sky islands. The range and rate at which they can interact with these depends on the material and target – see the Resource Wells, Headquarters, and Reality Anchors sections for more info. 
+
+Carriers can also throw resources to attack. This attack strikes an enemy in the targeted location with damage proportional to the quantity of resources thrown. When throwing $m$ kg of resource, the damage dealt is $\left\lfloor\left(\frac{5m}{4}\right)\right\rfloor$. This attack can hit obscured robots even if they are out of vision. The thrown resources fall into the void, lost forever.
+
+## Signal Amplifiers
+
+Signal amplifiers are produced with 30 kg of adamantium and 15 kg of mana. They allow nearby team robots within 20 units (see our sensing/vision section for distance details) to write to their faction’s shared array. Robots not within range of a signal amplifier or other signal boosting square can read from their shared array but cannot write to the array.
+
+## Launchers
+
+Launchers are produced with 45 kg of mana. They can deal damage to enemy robots by targeting a square within 16 units to attack. This attack can hit obscured robots even if they are out of vision. 
+
+## Temporal Destabilizers
+
+Temporal destabilizers are produced with 200 kg of elixir. Destabilizers can select a square within 13 units of them to attack. Once a square has been selected, destabilizers slow down time to all squares within 15 units of the square, applying a 10% increase on all base future robot cooldowns. This effect lasts for 5 turns, after which damage is dealt to all enemies in the affected area. This effect can stack up to 2 times (a max of 2 total destabilizers can impact a square). This attack can hit obscured robots even if they are out of vision. 
+
+## Temporal Boosters
+
+Temporal boosters are produced with 150 kg of elixir. Boosters can accelerate time around them by boosting, allowing ally robots to move and act faster than normal. Specifically, their boost ability applies a 10% tick reduction to all base ally robot cooldowns within 20 units of the booster for the next 10 turns. Note that the boosted location is fixed around the location the boost was applied, and does not move with the booster. This effect can stack up to 3 times with itself (a max of 3 total boosters can impact a square). 
+
+# Reality Anchors
+
+Reality anchors are the devices used to control sky islands. Anchors are manufactured at headquarters. Upon being manufactured, reality anchors will be placed within the headquarter’s storage. A carrier robot must then retrieve it from the headquarters and bring it to the island to conquer it. To place an anchor onto an island, the carrier robot must occupy a square on the island. Once placed, the reality anchor will apply to the entire island; i.e. the entire island will be anchored. 
+
+Reality anchors are 40 kg, meaning that carriers cannot carry any other items when holding an anchor. There are two types of anchors: Standard Anchors and Accelerating Anchors.
+
+Standard Anchors are crafted with 80 kg of adamantium and 80 kg of mana. Accelerating Anchors function similarly to Standard Anchors, but decrease surrounding ally robot cooldowns by 15%. This decrease affects all ally robot within 4 units of the island. These anchors are crafted with 300 kg of elixir. The boosting effects take place once the anchor has been placed and **does not stack with itself**.
+
+Standard anchors have a max health of 250 while accelerating anchors have a max health of 750. Once an anchor's health has been reduced to 0 the anchor is removed and the opposing team can place their own anchor on the island. At the end of each turn each anchor's health will change based on the occupancy of the island the anchor is planted on as follows: $\text{(% island occupied by placing team)} - \text{(% island occupied by opponent)}$. The health of an anchor can never increase past the initial max health of that type of anchor.
+
+Allied robots within 4 units of a controlled island get healed every round, at the end of the round. Standard Anchors heal 4 health, while Accelerating Anchors heal 6 health. Allied robots will not get healed on the turn that teams lose control of an island. Note that healing from controlled islands stacks.
+
+Teams can place an anchor on top of an island they already control, overriding their last anchor. The new anchor will be at full health, regardless of the health of the past anchor. The same anchor type does not need to be used to override. Note that overriding an anchor on an already controlled island does not contribute towards the total number of anchors placed tiebreaker described later on.
+
+# Communication
+
+Robots can only see their immediate surroundings and are independently controlled by copies of your code, making coordination very challenging. You will be unable to share any variables between them; note that even static variables will not be shared, as each robot will receive its own copy.
+
+To communicate between robots, alchemists from your home universe have developed a system to allow robots to read and write from a shared array of 64 non-negative integers strictly less than $2^{16}$. Array values persist across turns; ie. they are not reset. 
+
+However, magic lingering in the winds has unexpectedly interfered with communication. While all robots can still read from the shared array for a specified bytecode cost, robots that stray too far from their headquarters and anchored islands cannot write to the array. To combat this interference, alchemists have developed powerful signal amplifier robots that allow nearby robots to write to the shared array. Robots must be within 20 units of a signal amplifier from their team, 4 units from an island with a planted reality anchor from their team, or 9 units from one of their headquarters to write to the shared array.  
+
+# Sensing and Vision
+
+A robot can “sense” a square if the square is within the robot's sight range. Vision is **not** shared between robots, so a robot cannot necessarily sense information that is in sight range of a different robot.
+
+Sensing range is measured in squared units (Euclidean distance squared). For squares within the sensing range, robots can sense robots, resource wells, terrain (clouds, currents, and impassibility), and the current timeflow (given as a multiplier to cooldown). They can sense the type of robot and the type of resource well. You can check whether a square within range is on the map using `onTheMap()`.
+
+Clouds obscure squares from the default vision radius. To sense these squares, a separate obscured vision of 4 units is applied. 
+
+# Victory and Tiebreaks
+
+To win **Battlecode: Tempest**, your objective is to conquer 75% or more of all sky islands. The first team to succeed at this immediately wins. Sky islands must be captured all at once; if a team has conquered 75% islands at independent points in time but no longer controls them, this condition is not satisfied. 
+
+Games must end in finite amounts of time. If games do not end by round 2000, the following tiebreakers are applied in order to determine the stronger team.
+
+1. The team with more sky islands captured.
+2. The team with more reality anchors placed in total throughout the round (regardless of if they were destroyed or not).
+3. The team with a greater amount of elixir (added up across all headquarters and carriers).
+4. The team with a greater amount of mana (added up across all headquarters and carriers).
+5. The team with a greater amount of adamantium (added up across all headquarters and carriers).
+6. A uniformly random team will be selected.
+
+# Actions and Cooldowns
+
+Robots perform actions to interact with the game world, most of which cannot be performed multiple times in a single turn or in a short period of time. These actions are:
+
+- Attacking. Attacking can only be done if the robot's action cooldown is less than 10 (can check with the `isActionReady()` method), the robot type is one that can attack, and the robot has the relevant resources required to attack (if it is a carrier). Attacking can be performed by calling the `attack()` method. This targets a particular square, damaging an enemy robot if they are located on the square. This increases the robot's action cooldown as determined by the robot type.
+- Moving. Moving can only be done if the robot's movement cooldown is less than 10 (can check with the `isMovementReady()` method) and if the ending square is unoccupied and passible. Moving can be performed by calling the `move()` method. This moves the robot in the specified direction. This increases the robot's movement cooldown as determined by the robot type. If you wish to check whether a move is valid, you can use the `canMove()` method. 
+- Collection. Carriers can collect resources if the robot’s action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `collectResource()` method. This extracts resources from the targeted resource well and adds it to the carrier’s inventory according to the level of the well. This increases the robot's action cooldown as specified in the robot details.
+- Transferring. Carriers can transfer resources or anchors if the robot’s action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `transferResource()` or `transferAnchor()` method. This transfers the specified amount of material to the target and removes it to the carrier’s inventory. If the given quantity is negative, the robot instead removes the specified materials. This increases the robot's action cooldown as specified in the robot details.
+- Anchoring. Carriers can place anchors if the robot’s action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `placeAnchor()` method. This places the held anchor on the sky island occupied by the robot and removes it to the carrier’s inventory. This increases the robot’s action cooldown as specified in robot details.
+- Boosting. Temporal boosters can accelerate time around them, but only when their action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `boost()` method. This increases the robot’s action cooldown as specified in robot details. 
+- Destabilizing. Temporal destabilizers can decelerate time and deal damage around a specified location, but only when their action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `destabilize()` method. This targets a particular location. This increases the robot’s action cooldown as specified in robot details.
+- Spawning. Headquarters can spawn robots, but only when their action cooldown is less than 10 (can check with the `isActionReady()` method), and can be performed by calling the `buildRobot()` method. This deducts the cost of the robot from the headquarter’s stockpile, then creates one robot of the specified type in the specified square. 
+- Crafting. Headquarters can craft anchors and hold them in their storage. This increases the headquarter’s action cooldown as specified in robot details. 
+- Communicating. All robots can read the team array by calling `readSharedArray()`, for standard Java bytecode costs. Robots satisfying the communication requirements can also update the contents of the shared array with `writeSharedArray()`, which incurs a flat bytecode cost of 75 bytecodes per write.
+- Disintegrating. Any robot can call the `disintegrate()` method. This immediately destroys the robot that calls it.
+
+**After every turn, the movement and action cooldowns of all robots are decremented by 10.**
+
+# Robots in-depth
+
+All robots can read from the shared team array. Robots satisfying the proper communication requirements can also write to the array. 
+
+Attack and vision ranges are squared Euclidean distances. A vision range of 36 means that the robot can see a MapLocation within a circle of radius up to 6 tiles away.
+
+|  | Headquarter | Carrier | Launcher | Destabilizer | Booster | Amplifier
+| --- | --- | --- | --- | --- | --- | --- |
+| Cost | N/A | 50 Ad | 45 Mn | 200 Ex | 150 Ex | 30 Ad, 15 Mn
+| Cooldown / action | 2 | 10 | 10 | 70 | 140 | N/A 
+| Cooldown / move | N/A | $\left\lfloor\left(5+\frac{3m}{8}\right)\right\rfloor$ | 20 | 20 | 25 | 15
+| Health | N/A | 150 | 200 | 300 | 400 | 120
+| Attack | 4 | $\left\lfloor\left(\frac{5m}{4}\right)\right\rfloor$ | 20 | 50 | N/A | N/A
+| Action radius | 9 | 9 | 16 | 13 | N/A | N/A
+| Vision radius | 34 | 20 | 20 | 20 | 20 | 34
+| Bytecode limit | 20,000 | 12,500 | 10,000 | 10,000 | 10,000 | 10,000
+
+- Headquarter: the central headquarters. Can spawn robots, build anchors, and store materials. Deals damage to all surrounding enemy robots at the end of each round.
+- Carrier: the material moving robot. Can extract resources from wells, carry resources and anchors, plant anchors, and throw resources. 
+- Launcher: the general-purpose attack robot. Can attack a single robot in a specified location. 
+- Destabilizer: the offensive time manipulator. Can debuff enemy robots and attack groups of them.
+- Booster: the supporting time manipulator. Can buff nearby ally robots. 
+- Amplifier: the communication essential. Allows nearby robots to write messages.
+
+
+# Bytecode Limits
+
+Robots are also very limited in the amount of computation they are allowed to perform per turn. Bytecodes are a convenient measure of computation in languages like Java, where one Java bytecode corresponds roughly to one basic operation such as "subtract" or "get field", and a single line of code generally contains several bytecodes (for details see [here](http://en.wikipedia.org/wiki/Java_bytecode)). Because bytecodes are a feature of the compiled code itself, the same program will always compile to the same bytecodes and thus take the same amount of computation on the same inputs. This is great, because it allows us to avoid using time as a measure of computation, which leads to problems such as nondeterminism. With bytecode cutoffs, re-running the same match between the same bots produces exactly the same results - a feature you will find very useful for debugging.
+
+Every round each robot sequentially takes its turn. If a robot attempts to exceed its bytecode limit (usually unexpectedly, if you have too big of a loop or something), its computation will be paused and then resumed at exactly that point next turn. The code will resume running just fine, but this can cause problems if, for example, you check if a tile is empty, then the robot is cut off and the others take their turns, and then you attempt to move into a now-occupied tile. Instead, use the `Clock.yield()` function to end a robot's turn. This will pause computation where you choose, and resume on the next line next turn.
+
+The per-turn bytecode limits for various robots are as follows:
+
+- Headquarter: 20,000
+- Carrier: 12,500
+- Amplifier, Booster, Destabilizer, Launcher: 10,000
+
+
+Some standard functions such as the math library and sensing functions have fixed bytecode costs, available [here](https://github.com/battlecode/battlecode23/blob/master/engine/src/main/battlecode/instrumenter/bytecode/resources/MethodCosts.txt). More details on this at the end of the spec.
+
+# Appendix: Other resources and utilities
+
+## **Sample player**
+
+examplefuncsplayer, a simple player which performs various game actions, is included with battlecode. It includes helpful comments and is a template you can use to see what `RobotPlayer` files should look like.
+
+If you are interested, you may find the full game engine implementation [here](https://github.com/battlecode/battlecode23/tree/master/engine). This is not at all required, but may be helpful if you are curious about the engine's implementation specifics.
+
+## **Debugging**
+
+Debugging is extremely important. See the debugging tips to learn about our useful debug tools.
+
+## **Monitoring**
+
+The `Clock` class provides a way to identify the current round (`rc.getRoundNum()`), and how many bytecodes have been executed during the current round (`Clock.getBytecodeNum()`).
+
+## **GameActionExceptions**
+
+`GameActionException`s are thrown when something cannot be done. It is often the result of illegal actions such as moving onto another robot, or an unexpected round change in your code. Thus, you must write your player defensively and handle `GameActionException`s judiciously. You should also be prepared for any ability to fail and make sure that this has as little effect as possible on the control flow of your program.
+
+Throwing any `Exception`s cause a bytecode penalty of 500 bytecodes. Unhandled exceptions may paralyze your robot.
+
+## **Complete documentation**
+
+Every function you could possibly use to interact with the game can be found in our javadocs.
+
+# Appendix: Other restrictions
+
+## **Java language usage**
+
+Players may use classes from any of the packages listed in [AllowedPackages.txt](https://github.com/battlecode/battlecode23/blob/master/engine/src/main/battlecode/instrumenter/bytecode/resources/AllowedPackages.txt), except for classes listed in [DisallowedPackages.txt](https://github.com/battlecode/battlecode23/blob/master/engine/src/main/battlecode/instrumenter/bytecode/resources/DisallowedClasses.txt). These files can be found here.
+
+Furthermore, the following restrictions apply:
+
+`Object.wait`, `Object.notify`, `Object.notifyAll`, `Class.forName`, and `String.intern` are not allowed. `java.lang.System` only supports `out`, `arraycopy`, and `getProperty`. Furthermore, `getProperty` can only be used to get properties with names beginning with `"bc.testing."`. `java.io.PrintStream` may not be used to open files.
+
+Note that violating any of the above restrictions will cause the robots to explode when run, even if the source files compile without problems.
+
+## **Memory usage**
+
+Robots must keep their memory usage reasonable. If a robot uses more than 8 Mb of heap space during a tournament or scrimmage match, the robot may explode.
+
+## **More information on bytecode costs**
+
+Classes in `java.util`, `java.math`, and scala and their subpackages are bytecode counted as if they were your own code. The following functions in `java.lang` are also bytecode counted as if they were your own code.
+
+`Math.random 
+ StrictMath.random 
+ String.matches 
+ String.replaceAll 
+ String.replaceFirst 
+ String.split`
+
+The function `System.arraycopy` costs one bytecode for each element copied. All other functions have a fixed bytecode cost. These costs are listed in the [`MethodCosts.txt` file](https://github.com/battlecode/battlecode23/blob/master/engine/src/main/battlecode/instrumenter/bytecode/resources/MethodCosts.txt). Methods not listed are free. The bytecode costs of `battlecode.common` functions are also listed in the javadoc.
+
+Basic operations like integer comparison and array indexing cost small numbers of bytecodes each.
+
+Bytecodes relating to the creation of arrays (specifically `NEWARRAY`, `ANEWARRAY`, and `MULTIANEWARRAY`; see [here](https://en.wikipedia.org/wiki/Java_bytecode_instruction_listings) for reference) have an effective cost greater than a single bytecode. This is because these instructions, although they are represented as a single bytecode, can be vastly more expensive than other instructions in terms of computational cost. To remedy this, these instructions have a bytecode cost equal to the total length of the instantiated array. Note that this should have minimal impact on the typical team, and is only intended to prevent teams from repeatedly instantiating excessively large arrays.
+
+# Appendix: Lingering questions and clarifications
+
+If something is unclear, direct your questions to our Discord where other people may have the same question. We'll update this spec as the competition progresses.
+
+# Appendix: Changelog
+
+- Version 3.0.13 (February 2, 2023) 
+  - Previous cloud sensing fixed checked the incorrect location when determining radius: fixed
+
+- Version 3.0.12 (February 1, 2023) 
+  - Fixed sensing clouds within clouds to reduce vision radius
+  - Added Newbie/HS qualifier maps
+
+- Version 3.0.10 (January 31, 2023) 
+  - Released US Qualifier maps to public in client
+
+- Version 3.0.9 (January 31, 2023)
+  - Released US Qualifier maps to public in engine
+
+- Version 3.0.5 (January 29, 2023)
+  - Fix Repetition and Sakura maps
+
+- Version 3.0.4 (January 28, 2023)
+  - International qualifiers map release
+
+- Version 3.0.2 (January 26, 2023)
+  - Engine Fixes:
+    - Carriers should now be able to attack using a held anchor
+    - Wells can no longer be upgraded using the wrong resource 
+
+- Version 3.0.1 (January 25, 2023)
+  - Internal release for mystery tournament
+  - Fixed spec changelog formatting
+
+- Version 3.0.0 (January 24, 2023)
+  - Island/Anchor Buffs (island healing was too weak last patch, and very few teams found advantages in capturing and defending islands):
+    - Healing affects all robots within 4 radius squared of an island
+    - Healing per turn increased from 1, 2 --> 4, 6 for standard and accelerating anchors respectively
+    - Standard anchor cost reduced from 100 Ad, 100 Mn --> 80 Ad, 80 Mn
+  - Launcher Nerfs (early game launcher rushes were too strong, so we'll be decreasing their damage and increasing their quantity to allow for longer combat):
+    - Launcher damage decreased from 40 --> 20
+    - Launcher move cooldown reverted from 15 --> 20
+    - Launcher cost decreased from 60 Mn --> 45 Mn
+  - Amplifier Buffs (amplifiers saw little use outside of the finals, so we intend to decrease the resources lost from creating an amplifier)
+    - Amplifier cost decreased from 30 Ad, 30 Mn --> 30 Ad, 15 Mn
+  - Carrier Revert (carrier action cooldown changes were unintuitive, so we intend to revert them to their past cooldowns)
+    - Carrier cooldown reverted from 8 --> 10
+  - Well Buffs (upgrading and converting wells was difficult due to achieve due to their high costs)
+    - Elixir conversion cost decreased from 700 --> 600
+    - Well upgrade cost decreased from 1700 --> 1400
+
+
+- Version 2.0.6 (January 24, 2023)
+  - Renamed Checkmate2 in Sprint 2 maps
+
+- Version 2.0.5 (January 24, 2023)
+  - Fixed Checkmate in Sprint 2 maps
+
+- Version 2.0.4 (January 23, 2023)
+  - Adding Sprint 2 maps
+
+- Version 2.0.3 (January 20, 2023)
+  - Released additional maps with more clouds
+  - Client Fixes:
+    - Currents now display direction in map editor
+
+- Version 2.0.2 (January 19, 2023)
+  - Spec Fixes:
+    - Anchor healing frequency fixed
+    - Headquarter cooldown fixed in table
+    - Passive resource gain number fixed
+  - Engine Fixes:
+    - Fix bug in checking islands held win condition
+    - Carrier attacks correctly deduct resources from teamInfo
+
+- Version 2.0.1 (January 18, 2023)
+  - Balance Changes:
+    - Anchor healing frequency every 3 turns --> 1 turn
+    - Passive headquarter resource increase from 2 Ad, 2 Mn --> 6 Ad, 6 Mn
+
+- Version 2.0.0 (January 18, 2023) - Post Sprint 1 Rebalancing
+  - Balance Changes:
+    - All health and damage multiplied by 10 (except amplifier health)
+      - Amplifier health 40 --> 120
+    - Controlled islands heal ally robots 1 health every 3 rounds for standard anchors, 2 health every 3 rounds for accelerating anchors
+    - Headquarters do 4 damage to all enemy robots within action radius at the end of each round
+    - Carrier bytecode limit 10000 --> 12500, Amplifier bytecode limit 7500 --> 10000
+    - senseMapInfo bytecode cost 10 --> 5, senseNearbyMapInfos 200 --> 100, all MapInfo methods which previously cost 5 bytecode lowered to 2
+    - canAttack bytecode cost 10 --> 5, senseRobotAtLocation 25 --> 15
+    - Carrier maximum damage 80 --> 50
+    - Amplifier build cost 40 Ad, 40 Mn --> 30 Ad, 30 Mn
+    - Launcher damage 60 --> 30
+    - Launcher movement cooldown 20 --> 15
+    - GameConstants.WELL_STANDARD_RATE 2 --> 1
+    - GameConstants.WELL_ACCELERATED_RATE 6 --> 3
+    - Carrier action cooldown 10 --> 8
+    - Headquarter action cooldown 10 --> 2
+    - Change guarantee on adamantium wells: at least one well will be within 100 units of EACH HQ
+      - Modified AllElements, ArtistRendition and Pit maps to satisfy the new constraints
+    - Increase minimum opposite well distance from 81 --> 100
+    - GameConstants.UPGRADE_TO_ELIXIR 1000 --> 700
+    - GameConstants.UPGRADE_WELL_AMOUNT 2400 --> 1700
+  - Engine Fixes:
+    - Changed canAttack and attack to succeed but deal no damage to empty locations, friendly robots, and headquarters to prevent detecting obscured robots
+    - Removed carriers' held resources being counted twice for use in tiebreakers  
+    - Removed deprecated methods (senseCooldownMultiplier, senseDestabilizeTurns, senseBoostTurns)
+    - Fixed spec of onTheMap
+    - getAllLocationsWithinRadiusSquared now correctly supports -1
+
+- Version 1.3.7 (January 17, 2023)
+  - Display sprint 1 maps in client
+
+- Version 1.3.6 (January 17, 2023)
+  - Released sprint 1 maps
+  - Engine Fixes:
+    - Fixed assertion that is getting compiled out
+
+- Version 1.3.5 (January 17, 2023)
+  - Non-essential update for competitors but critical for infrastructure:
+    - Modify tournament mode in client for new infrastructure
+
+- Version 1.3.4 (January 17, 2023)
+  - Non-essential update for competitors but critical for infrastructure:
+    - Fix a broken release by starting afresh.
+
+- Version 1.3.3 (January 17, 2023)
+  - Engine Fixes:
+    - Fixed more bugs with boosts from accelerating anchors
+
+- Version 1.3.2 (January 16, 2023)
+  - Spec Fixes:
+    - Documented replacing ally anchor behaviors (actually this time)
+    - Fix README link
+  - Engine Fixes:
+    - Fixed bug where removing accelerating anchors caused exceptions
+    - Illegal robots no longer auto forfeit future games in series
+  - Client Fixes:
+    - Lower opacity of effects
+
+- Version 1.3.1 (January 15, 2023)
+  - Engine Fixes:
+    - Fixed headquarter colors being reversed when teams are reversed (from alternateOrder)
+    - Fixed issue in checking maps with islands on edges
+
+- Version 1.3.0 (January 15, 2023)
+  - Spec Fixes:
+    - Clarified that clouds change vision radius to 4 units
+  - Engine Fixes:
+    - Added check for islands being continuous for map to be valid (old maps may need to be recreated)
+    - Removed exception throw in onTheMap
+    - Fixed exception print in examplefuncsplayer
+    - Added senseCloud and senseNearbyCloudLocations methods which allow sensing of visible clouds
+    - Fixed destabilizer damage
+    - Fixed updating teamInfo counts for resources
+    - Added alternateOrder option to gradle, when enabled this option will mean if multiple consecutive maps are played then teams will swap turn order
+    - Changed error message to current version number :)
+
+- Version 1.2.4 (January 13, 2023)
+  - Engine Fixes:
+    - Fixed the spelling of getCooldownMultiplier
+    - Removed getAnchor from the default RobotPlayer
+
+- Version 1.2.3 (January 13, 2023)
+  - Non-essential update for competitors but critical for infrastructure:
+    - Remove verbose deprecation output. Method deprecation will be re-documented in the future.
+
+- Version 1.2.2 (January 12, 2023)
+  - Spec Fixes:
+    - Documented behavior of replacing ally anchors on islands
+  - Engine Fixes: 
+    - Reduced bytecode of isLocationOccupied to 5 to match senseRobotAtLocation
+    - Added deprecation messages in outdated methods
+    - getAnchor now throws exception if not called by carrier
+    - Carriers can no longer utilize collectResource to obtain negative inventory
+    - Gradle now has the option to remove map validation
+  - Client Fixes:
+    - islandIDs no longer clue you in on where other islands are ;)
+
+- Version 1.2.1 (January 11, 2023)
+  - Spec Fixes:
+    - Updated new well rates in general spec
+  - Engine Fixes:
+    - MapInfo's isPassable method no longer returns incorrect values
+    - Changed default map to DefaultMap rather than maptestsmall
+  - Client Fixes:
+    - Old maps now have continuous IDs
+
+- Version 1.2.0 (January 11, 2023)
+  - Balance changes:
+    - GameConstants.WELL_STANDARD_RATE 4 --> 2, reduces the standard max ouput rate of a well
+    - GameConstants.WELL_ACCELERATED_RATE 10 --> 6, reduces the accelerated max output rate of a well
+    - GameConstants.UPGRADE_TO_ELIXIR 1500 --> 1000, reduces the amount needed to upgrade a well to elixir
+    - GameConstants.UPGRADE_WELL_AMOUNT 3600 --> 2400, reduces the amount needed to upgrade a well to have the accelerated max output rate
+  - Spec Fixes:
+    - Added statement of guarantee of 4-35 sky islands and no sky islands with greater than 20 area
+  - Engine Fixes:
+    - Can no longer build headquarters
+    - Communication bug (can always communicate) is fixed
+    - Added hasCloud method to MapInfo
+    - Added isPassable method to MapInfo
+    - Inventories in RobotInfo are now private, use getResourceAmount, getNumAnchors, getTotalAnchors instead
+    - Calling canTransferResource with 0 resources no longer works
+    - Added getIslandCount to robotController
+    - Added getWeight to robotController
+    - Changed onTheMap to not check for visibility
+    - Added canReturnAnchor and returnAnchor to place anchor back in headquarter
+  - Client Fixes:
+    - Island IDs are now continuous and can be displayed in client
+    - Added support for returning anchors to headquarters
+
+- Version 1.1.0 (January 10, 2023)
+  - Spec Fixes:
+    - Communication max value: 216 -> $2^{16}$
+    - Clarified rules of communication (near *own* headquarters or planted anchor)
+    - Moved defintion of units to top of document
+    - Clarified time-bending effects stack additively
+    - Added links to allowed and disallowed classes (thanks stefangimmillaro)
+  - Engine Fixes:
+    - Added sensing mapInfo to detect currents, clouds and time-bending effects
+    - Fixed assert bug on checking for adjacency in collecting and transfering resources and anchors
+    - Resigning now means the other player wins automatically
+  - Client Fixes:
+    - Fixed client style scrollbars to prevent blocked content
+
+
+
+<style class="fallback">body{visibility:hidden}</style>
+<script>markdeepOptions={tocStyle:'long'};</script>
+<script src="js/markdeep.min.js?" charset="utf-8"></script>

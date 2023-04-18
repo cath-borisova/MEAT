@@ -1,0 +1,45 @@
+version: '2'
+
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/frontend
+      - ./client:/client
+      #issue with which node_modules folder docker sees (see https://github.com/barrysteyn/node-scrypt/issues/148)
+      - ./client/visualizer/node_modules
+      - ./client/playback/node_modules
+      - ./schema:/schema
+    ports:
+      - 3000:3000
+    # environment:
+    #   - NODE_PATH=/install/node_modules
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/code
+    ports:
+      - 8000:80
+    environment:
+      - DJANGO_SETTINGS_MODULE=dev_settings
+    command: bash -c 'python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:80'
+
+  compile:
+    build:
+      context: './infrastructure/worker'
+      dockerfile: ./../compile.Dockerfile
+    environment:
+      - DOMAIN=localhost:8000
+
+  game:
+    build:
+      context: './infrastructure/worker'
+      dockerfile: ./../game.Dockerfile
+    environment:
+      - DOMAIN=localhost:8000

@@ -1,0 +1,238 @@
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+import java.nio.file.*
+
+sourceCompatibility = 1.8
+
+// Avoid weird configuration-time dependency bugs
+// Fun fact: this line of code single-handedly fixed an error I spent two hours debugging.
+evaluationDependsOnChildren()
+
+configurations {
+    scala
+
+    engine {
+      transitive false
+    }
+    bots {
+      transitive false
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    scala group: 'org.scala-lang', name: 'scala-library', version: '2.11.7'
+    scala group: 'org.scala-lang', name: 'scala-compiler', version: '2.11.7'
+    scala group: 'org.scala-lang', name: 'scala-reflect', version: '2.11.7'
+
+    engine project(":engine")
+    bots project(":example-bots")
+}
+
+def serverJar = configurations.engine.singleFile
+
+task buildMap(type: JavaExec, dependsOn: [':engine:build']) {
+    mainClass = 'battlecode.world.maps.' + project.property('buildMap')
+    classpath = files(serverJar)
+}
+
+task buildMaps(type: JavaExec, dependsOn: [':engine:build']) {
+  mainClass = 'battlecode.world.BuildMaps'
+  classpath = files(serverJar)
+}
+
+def defaultClassLocation = project(':example-bots').sourceSets.main.output.classesDirs.getAsPath()
+def defaultReplay = 'matches/' + project.property('teamA') + '-vs-' + project.property('teamB') + '-on-' + project.property('maps') + '.bc23'
+
+task headless(type: JavaExec, dependsOn: [':engine:build', ':example-bots:build']) {
+  mainClass = 'battlecode.server.Main'
+  classpath = files(serverJar) + project(':example-bots').sourceSets.main.output + configurations.scala
+  args = ['-c=-']
+  jvmArgs = [
+    '-Dbc.server.wait-for-client=' + (project.findProperty('waitForClient') ?: 'false'),
+    '-Dbc.server.mode=headless',
+    '-Dbc.server.map-path=maps',
+    '-Dbc.server.robot-player-to-system-out=' + (project.findProperty('outputVerbose') ?: 'true'),
+    '-Dbc.server.debug=' + (project.findProperty('debug') ?: 'false'),
+    '-Dbc.engine.debug-methods=' + (project.findProperty('debug') ?: 'false'),
+    '-Dbc.engine.enable-profiler=' + (project.findProperty('enableProfiler') ?: 'false'),
+    '-Dbc.engine.show-indicators=' + (project.findProperty('showIndicators') ?: 'true'),
+    '-Dbc.game.team-a=' + project.property('teamA'),
+    '-Dbc.game.team-b=' + project.property('teamB'),
+    '-Dbc.game.team-a.url=' + (project.findProperty('classLocationA') ?: defaultClassLocation),
+    '-Dbc.game.team-b.url=' + (project.findProperty('classLocationB') ?: defaultClassLocation),
+    '-Dbc.game.team-a.package=' + (project.findProperty('packageNameA') ?: project.property('teamA')),
+    '-Dbc.game.team-b.package=' + (project.findProperty('packageNameB') ?: project.property('teamB')),
+    '-Dbc.game.maps=' + project.property('maps'),
+    '-Dbc.server.validate-maps=' + project.property('validateMaps'),
+    '-Dbc.server.alternate-order=' + project.property('alternateOrder'),
+    '-Dbc.server.save-file=' + (project.findProperty('replay') ?: defaultReplay),
+  ]
+}
+
+// keep the client happy because it references this step
+task unpackClient() {}
+
+task run(dependsOn: ['headless', 'unpackClient']) {}
+
+task runClient {
+  doLast {
+    exec {
+      commandLine 'npm', 'install'
+      workingDir 'client/visualizer'
+    }
+
+    exec {
+      commandLine 'npm', 'run', 'watch'
+      workingDir 'client/visualizer'
+    }
+  }
+}
+
+task release(dependsOn: ['release_main', 'release_docs', 'release_sources'])
+
+task release_main(type: Jar, dependsOn: [':engine:build']) {
+  File f_version = new File(project.projectDir, "battlecode_version");
+
+  doFirst {
+    if (!project.hasProperty("release_version"))
+      throw new InvalidUserDataException("Must provide property \"release_version\"")
+
+    Files.write(f_version.toPath(), [project.property("release_version")]);
+  }
+
+  archiveBaseName = "battlecode";
+  if (project.hasProperty("release_version"))
+    archiveVersion = project.property("release_version");
+  destinationDirectory = project.projectDir;
+
+  FileCollection src = files(f_version);
+  src += zipTree(serverJar);
+
+  from src;
+
+  doLast {
+    Files.delete(f_version.toPath())
+  }
+}
+
+task release_docs(type: Jar, dependsOn: [':engine:javadoc']) {
+  doFirst {
+    if (!project.hasProperty("release_version") || project.property("release_version") == "unspecified")
+      throw new InvalidUserDataException("Must provide property \"release_version\"")
+  }
+
+  archiveBaseName = "battlecode-javadoc"
+  if (project.hasProperty("release_version"))
+    archiveVersion = project.property("release_version");
+  destinationDirectory = project.projectDir;
+
+  from new File(project(":engine").docsDir, "javadoc")
+}
+
+task release_sources(type: Jar, dependsOn: classes) {
+  archiveBaseName = "battlecode-source"
+  if (project.hasProperty("release_version"))
+    archiveVersion = project.property("release_version");
+  destinationDirectory = project.projectDir;
+
+  from project(":engine").sourceSets.main.allSource
+}
+
+task prodClient {
+  doLast {
+    exec {
+      commandLine 'npm', 'install'
+      workingDir 'client'
+    }
+    exec {
+      commandLine 'npm', 'run', 'prod-electron'
+      workingDir 'client'
+    }
+  }
+}
+
+task releaseClientWin(type: Zip, dependsOn: ['prodClient']) {
+  from fileTree('client/dist/win-unpacked')
+}
+
+task releaseClientMac(type: Zip, dependsOn: ['prodClient']) {
+  from fileTree('client/dist/mac')
+}
+
+task releaseClientLinux(type: Zip, dependsOn: ['prodClient']) {
+  from fileTree('client/dist/linux-unpacked')
+}
+
+task releaseClientWin32(type: Zip, dependsOn: ['prodClient']) {
+  from fileTree('client/dist/win-ia32-unpacked')
+}
+
+task releaseClientLinux32(type: Zip, dependsOn: ['prodClient']) {
+  from fileTree('client/dist/linux-ia32-unpacked')
+}
+
+
+publishing {
+  publications {
+    server(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact release_main
+
+      artifact release_docs {
+        classifier 'javadoc'
+      }
+
+      artifact release_sources {
+        classifier 'sources'
+      }
+    }
+
+    clientWin(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23-client-win'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact releaseClientWin
+    }
+
+    clientMac(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23-client-mac'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact releaseClientMac
+    }
+
+    clientLinux(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23-client-linux'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact releaseClientLinux
+    }
+
+    clientWin32(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23-client-win-32'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact releaseClientWin32
+    }
+
+    clientLinux32(MavenPublication) {
+      groupId 'org.battlecode'
+      artifactId 'battlecode23-client-linux-32'
+      version project.findProperty('release_version') ?: 'NONSENSE'
+
+      artifact releaseClientLinux32
+    }
+  }
+}
