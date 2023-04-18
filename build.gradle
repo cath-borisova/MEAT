@@ -74,6 +74,34 @@ task headless(type: JavaExec, dependsOn: [':engine:build', ':example-bots:build'
   ]
 }
 
+
+task sim(type: JavaExec, dependsOn: [':engine:build', ':example-bots:build']) {
+  mainClass = 'simulator.Sim'
+  classpath = files(serverJar) + project(':example-bots').sourceSets.main.output + configurations.scala
+  args = ['-c=-']
+  jvmArgs = [
+    '-Dbc.server.wait-for-client=' + (project.findProperty('waitForClient') ?: 'false'),
+    '-Dbc.server.mode=headless',
+    '-Dbc.server.map-path=maps',
+    '-Dbc.server.robot-player-to-system-out=' + (project.findProperty('outputVerbose') ?: 'true'),
+    '-Dbc.server.debug=' + (project.findProperty('debug') ?: 'false'),
+    '-Dbc.engine.debug-methods=' + (project.findProperty('debug') ?: 'false'),
+    '-Dbc.engine.enable-profiler=' + (project.findProperty('enableProfiler') ?: 'false'),
+    '-Dbc.engine.show-indicators=' + (project.findProperty('showIndicators') ?: 'true'),
+    '-Dbc.game.team-a=' + project.property('teamA'),
+    '-Dbc.game.team-b=' + project.property('teamB'),
+    '-Dbc.game.team-a.url=' + (project.findProperty('classLocationA') ?: defaultClassLocation),
+    '-Dbc.game.team-b.url=' + (project.findProperty('classLocationB') ?: defaultClassLocation),
+    '-Dbc.game.team-a.package=' + (project.findProperty('packageNameA') ?: project.property('teamA')),
+    '-Dbc.game.team-b.package=' + (project.findProperty('packageNameB') ?: project.property('teamB')),
+    '-Dbc.game.maps=' + project.property('maps'),
+    '-Dbc.server.validate-maps=' + project.property('validateMaps'),
+    '-Dbc.server.alternate-order=' + project.property('alternateOrder'),
+    '-Dbc.server.save-file=' + (project.findProperty('replay') ?: defaultReplay),
+  ]
+}
+
+
 // keep the client happy because it references this step
 task unpackClient() {}
 

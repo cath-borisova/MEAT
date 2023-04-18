@@ -1,5 +1,5 @@
-package simulator.src.Algorithms;
-import simulator.src.*;
+package simulator.Algorithms;
+import simulator.*;
 public class AStar implements Algo{
     Coords coords;
 

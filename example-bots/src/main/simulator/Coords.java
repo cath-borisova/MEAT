@@ -1,4 +1,4 @@
-package simulator.src;
+package simulator;
 
 public class Coords {
     public int x, y;

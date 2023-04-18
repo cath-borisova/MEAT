@@ -1,4 +1,4 @@
-package simulator.src;
+package simulator;
 
 public class GridLocation {
     LocationType type;

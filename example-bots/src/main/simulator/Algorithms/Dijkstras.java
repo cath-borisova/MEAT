@@ -1,5 +1,5 @@
-package simulator.src.Algorithms;
-import simulator.src.*;
+package simulator.Algorithms;
+import simulator.*;
 public class Dijkstras implements Algo{
     Coords coords;
 

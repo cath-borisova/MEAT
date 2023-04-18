@@ -1,5 +1,5 @@
-package simulator.src.Algorithms;
-import simulator.src.*;
+package simulator.Algorithms;
+import simulator.*;
 import java.util.*;
 public class BFS implements Algo{
 

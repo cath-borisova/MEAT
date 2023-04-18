@@ -1,8 +1,8 @@
-package simulator.src;
+package simulator;
 
 public class Sim {
     public static void main(String[] args) {
         Grid grid = new Grid(5734531);
-        grid.toString();
+        System.out.println(grid.toString());
     }
 }
