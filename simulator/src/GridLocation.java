@@ -1,8 +1,13 @@
 package simulator.src;
+
 public class GridLocation {
     LocationType type;
     double cost;
     
+    public GridLocation(LocationType type) {
+        this.type = type;
+    }
+
     public GridLocation(LocationType type, double cost) {
         this.type = type;
         this.cost = cost;
