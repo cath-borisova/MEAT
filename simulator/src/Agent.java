@@ -18,7 +18,7 @@ public class Agent {
     }
 
     public void Move(Algo algorithm){
-        Coords new_pos = algorithm.nextMove(grid, curX, curY, goalX, goalY);
+        Coords new_pos = algorithm.nextMove(grid, curX, curY, goalX, goalY, visRadius);
         grid.setLocation(new_pos.x, new_pos.y, grid.getLocation(curX, curY));
         //empty the original spot?
     }

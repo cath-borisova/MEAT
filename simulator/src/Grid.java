@@ -3,7 +3,7 @@ package simulator.src;
 import java.util.Random;
 
 public class Grid {
-    GridLocation[][] world;
+    public GridLocation[][] world;
     final int OBSTACLE_COST = 10000;
     final int MAX_SIZE = 25;
     final int MIN_SIZE = 5;
