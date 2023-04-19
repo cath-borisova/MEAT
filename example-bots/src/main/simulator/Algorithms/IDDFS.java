@@ -9,7 +9,7 @@ public class IDDFS implements Algo{
 
     public Coords nextMove(Grid grid, Coords initial, Coords goal, int visRadius){
         Coords destination = new Coords(-1, -1);
-        for(int depth = 1; depth <= visRadius; depth += 1) {
+        for(int depth = 1; depth <= grid.world.length; depth += 1) {
             destination = depthFirstSearch(grid, initial, goal, visRadius, depth);
             if(!destination.equals(new Coords(-1, -1))){
                 return destination;
@@ -34,7 +34,7 @@ public class IDDFS implements Algo{
                 return curr_path.get(1); //first move
             }
 
-            if(!inBounds(visited, x, y, depth, initial, grid)){
+            if(!inBounds(visited, x, y, depth, initial, grid, visRadius)){
                 continue;
             }
             visited[x][y] = true;
@@ -54,7 +54,7 @@ public class IDDFS implements Algo{
         return new Coords(-1, -1);
     }
 
-    public boolean inBounds(boolean [][] visited, int x, int y, int depth, Coords initial, Grid grid){ //ignores rubble
+    public boolean inBounds(boolean [][] visited, int x, int y, int depth, Coords initial, Grid grid, int visRadius){ //ignores rubble
         if(x < 0 || y < 0 || x >= visited.length || y >= visited[0].length){
             return false;
         }
@@ -62,7 +62,7 @@ public class IDDFS implements Algo{
             return false;
         }
         double euclidean = Math.sqrt(Math.pow((x - initial.x), 2) + Math.pow((y - initial.y), 2));
-        if(euclidean > depth){
+        if(euclidean > depth || euclidean > visRadius){
             return false;
         }
         if(grid.getLocation(x, y).getType() == LocationType.OBSTACLE){
