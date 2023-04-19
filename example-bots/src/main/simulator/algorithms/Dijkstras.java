@@ -1,4 +1,4 @@
-package simulator.Algorithms;
+package simulator.algorithms;
 import simulator.*;
 public class Dijkstras implements Algo{
     Coords coords;

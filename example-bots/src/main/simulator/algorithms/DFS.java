@@ -1,4 +1,4 @@
-package simulator.Algorithms;
+package simulator.algorithms;
 import simulator.*;
 import java.util.*;
 public class DFS implements Algo {

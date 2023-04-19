@@ -1,4 +1,4 @@
-package simulator.Algorithms;
+package simulator.algorithms;
 import simulator.*;
 public class AStar implements Algo{
     Coords coords;
