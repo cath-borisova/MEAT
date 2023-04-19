@@ -1,5 +1,5 @@
 package simulator;
-
+import simulator.*;
 public class Coords {
     public int x, y;
     

@@ -27,26 +27,18 @@ public class BFS implements Algo{
                 return curr_path.get(1); //first move
             }
 
-            if(inBounds(visited, x + 1, y, visRadius, initial, grid)){
-                LinkedList<Coords> temp = curr_path;
-                temp.add(new Coords(x+1, y));
-                q.add(temp);
-            }
-            if(inBounds(visited, x - 1, y, visRadius, initial, grid)){
-                LinkedList<Coords> temp = curr_path;
-                temp.add(new Coords(x-1, y));
-                q.add(temp);
-            }
-            if(inBounds(visited, x, y+1, visRadius, initial, grid)){
-                LinkedList<Coords> temp = curr_path;
-                temp.add(new Coords(x, y+1));
-                q.add(temp);
-
-            }
-            if(inBounds(visited, x, y-1, visRadius, initial, grid)){
-                LinkedList<Coords> temp = curr_path;
-                temp.add(new Coords(x, y-1));
-                q.add(temp);
+            for(int row = -1; row <= 1; row ++){
+                for(int col = -1; col <= 1; col ++){
+                    if(row == 0 && col == 0){
+                        continue;
+                    }
+                    if(inBounds(visited, row, col, visRadius, initial, grid)){
+                        LinkedList<Coords> temp = curr_path;
+                        temp.add(new Coords(row, col));
+                        q.add(temp);
+                        visited[x][y] = true;
+                    }
+                }
             }
         }
 
