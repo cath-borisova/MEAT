@@ -11,12 +11,12 @@ public class Agent {
     public int visRadius;
     public Coords initial;
     public Coords goal;
-    Grid grid;
+    public Grid grid;
 
-    public Agent(int visRadius, int curX, int curY, int goalX, int goalY, Grid grid){
+    public Agent(Grid grid, int visRadius, Coords initial, Coords goal) {
         this.visRadius = visRadius;
-        initial = new Coords(curX, curY);
-        goal = new Coords(goalX, goalY);
+        this.initial = initial;
+        this.goal = goal;
         this.grid = grid;
     }
 
