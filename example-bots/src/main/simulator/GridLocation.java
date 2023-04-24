@@ -35,7 +35,7 @@ public class GridLocation {
             case AGENT: return "A";
             case OBSTACLE: return "/";
             case EMPTY: return Integer.toString(0);
-            case RUBBLE: return Double.toString(cost);
+            case RUBBLE: return String.format("%.0f", cost);
             case GOAL: return "G";
             default: return "";
         }

@@ -20,7 +20,7 @@ public class Coords {
 
     @Override
     public int hashCode() {
-        return Objects.hash(new int[]{this.x, this.y});
+        return Objects.hash(this.x, this.y);
     }
 
     @Override
