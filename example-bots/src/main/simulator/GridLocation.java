@@ -2,7 +2,7 @@ package simulator;
 
 public class GridLocation {
     LocationType type;
-    int cost;
+    double cost;
     
     public GridLocation(LocationType type) {
         this.type = type;
@@ -35,7 +35,7 @@ public class GridLocation {
             case AGENT: return "A";
             case OBSTACLE: return "/";
             case EMPTY: return Integer.toString(0);
-            case RUBBLE: return Integer.toString(cost);
+            case RUBBLE: return Double.toString(cost);
             case GOAL: return "G";
             default: return "";
         }

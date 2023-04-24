@@ -1,6 +1,8 @@
 package simulator.algorithms;
+
 import simulator.*;
 import java.util.*;
+
 public class BFS implements Algo{
 
     public Coords nextMove(Grid grid, Coords initial, Coords goal, int visRadius){
@@ -9,20 +11,22 @@ public class BFS implements Algo{
 
     public Coords breadthFirstSearch(Grid grid, Coords initial, Coords goal, int visRadius){
         boolean[][] visited = new boolean [grid.world.length][grid.world[0].length];
-        Queue<Coords> queue = new LinkedList<>();
-        Map<Coords, Coords> parent = new HashMap<>();
-        visited[initial.x][initial.y] = true;
-        queue.add(initial);
+        Queue<Coords> frontier = new LinkedList<>();
+        Map<Coords, Coords> parents = new HashMap<>();
 
-        while(!queue.isEmpty()){
+        visited[initial.x][initial.y] = true;
+        frontier.add(initial);
+        parents.put(initial, null);
+
+        while(!frontier.isEmpty()){
             
-            Coords curr = queue.remove();
+            Coords curr = frontier.remove();
             // Goal was found
             if (curr.equals(goal)) {
                 List<Coords> path = new ArrayList<>();
                 while (curr != null) {
                     path.add(curr);
-                    curr = parent.get(curr);
+                    curr = parents.get(curr);
                 }
 
                 // Return back the position after the initial location
@@ -35,10 +39,10 @@ public class BFS implements Algo{
 
                     int xf = curr.x + dx, yf = curr.y + dy;
                     if(inBounds(grid, visited, initial, visRadius, xf, yf)){
-                        Coords neighbor = new Coords(xf, yf);
-                        queue.add(neighbor);
-                        parent.put(neighbor, curr);
-                        visited[neighbor.x][neighbor.y] = true;
+                        Coords next = new Coords(xf, yf);
+                        frontier.add(next);
+                        parents.put(next, curr);
+                        visited[next.x][next.y] = true;
                     }
                 }
             }

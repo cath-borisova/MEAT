@@ -1,13 +1,21 @@
 package simulator;
+
 import java.util.Objects;
 
-import simulator.*;
 public class Coords {
     public int x, y;
+    public double pathCost;
     
-    public Coords(int x, int y){
+    public Coords(int x, int y) {
         this.x = x;
         this.y = y;
+        this.pathCost = 0;
+    }
+
+    public Coords(int x, int y, double pathCost) {
+        this.x = x;
+        this.y = y;
+        this.pathCost = pathCost;
     }
 
     @Override
