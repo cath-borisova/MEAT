@@ -104,7 +104,6 @@ public class Instrumentor {
         }
 
         int used = Integer.MAX_VALUE - remaining;
-        System.out.println(used);
         return used;
     }
 
@@ -171,13 +170,12 @@ public class Instrumentor {
     }
 
     public InstrumentedGridLocation newInstrumentedEmptyGridLocation() {
-        Instrumentor instrumentor = new Instrumentor();
-        Class<?> gridLocationClass = instrumentor.getGridLocationClass();
-        Class<Enum> locationTypeClass = instrumentor.getLocationTypeClass();
-        Object emptyLocationType = instrumentor.instrumentedEmptyLocationType();
+        Class<?> gridLocationClass = getGridLocationClass();
+        Class<Enum> locationTypeClass = getLocationTypeClass();
+        Object emptyLocationType = instrumentedEmptyLocationType();
 
         try {
-            return new InstrumentedGridLocation(gridLocationClass.getDeclaredConstructor(locationTypeClass).newInstance(emptyLocationType));
+            return new InstrumentedGridLocation(gridLocationClass.getConstructor(locationTypeClass).newInstance(emptyLocationType));
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                 | NoSuchMethodException e) {
             e.printStackTrace();
@@ -199,7 +197,7 @@ public class Instrumentor {
     public void instrumentedGridSetLocation(InstrumentedGrid grid, int x, int y, InstrumentedGridLocation gridLocation) {
         Class<?> gridClass = getGridClass();
         try {
-            Method setLocation = gridClass.getMethod("setLocation", int.class, int.class, getGridLocationClass());
+            Method setLocation = gridClass.getMethod("setLocation", int.class, int.class, gridLocation.getUnderlyingObject().getClass());
             setLocation.invoke(grid.getUnderlyingObject(), x, y, gridLocation.getUnderlyingObject());
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException | IllegalArgumentException e) {
             e.printStackTrace();
@@ -207,13 +205,7 @@ public class Instrumentor {
     }
 
     public void instrumentedGridSetLocationEmpty(InstrumentedGrid grid, int x, int y) {
-        Class<?> gridClass = getGridClass();
-        try {
-            Method setLocation = gridClass.getMethod("setLocation", int.class, int.class, getGridLocationClass());
-            setLocation.invoke(grid.getUnderlyingObject(), x, y, newInstrumentedEmptyGridLocation());
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException | IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        instrumentedGridSetLocation(grid, x, y, newInstrumentedEmptyGridLocation());
     }
 
     public InstrumentedCoords coordsToInstrumentedCoords(Coords coords) {
@@ -264,6 +256,15 @@ public class Instrumentor {
         }
     }
 
+    public String instrumentedGridToString(InstrumentedGrid grid) {
+        try {
+            return getGridClass().getMethod("toString").invoke(grid.getUnderlyingObject()).toString();
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     /**
      * @return The amount of bytecode used to calculate the move.
      */
@@ -273,28 +274,23 @@ public class Instrumentor {
         Class<?> coordsClass = getCoordsClass();
         startMonitor();
 
-        InstrumentedCoords newPos;
+        Coords newPos;
         try {
             Object algo = algoClass.newInstance();
             Method nextMoveMethod = algoClass.getMethod("nextMove", gridClass, coordsClass, coordsClass, int.class);
-            System.out.println(Arrays.toString(nextMoveMethod.getParameterTypes()));
-            Object[] args = {grid, coordsToInstrumentedCoords(agent.initial).getUnderlyingObject(), coordsToInstrumentedCoords(agent.goal).getUnderlyingObject(), agent.visRadius};
-            System.out.println(Arrays.toString(Arrays.stream(args).map(Object::getClass).toArray()));
-            newPos = new InstrumentedCoords(nextMoveMethod.invoke(algo, grid.getUnderlyingObject(), coordsToInstrumentedCoords(agent.initial).getUnderlyingObject(), coordsToInstrumentedCoords(agent.goal).getUnderlyingObject(), agent.visRadius));
+            Object initial = coordsToInstrumentedCoords(agent.initial).getUnderlyingObject();
+            Object goal = coordsToInstrumentedCoords(agent.goal).getUnderlyingObject();
+            Object newPosObj = nextMoveMethod.invoke(algo, grid.getUnderlyingObject(), initial, goal, agent.visRadius);
+            newPos = instrumentedCoordsToCoords(new InstrumentedCoords(newPosObj));
         } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
             return -1;
         }
         int used = stopMonitor();
-
-        // TODO EHHHH Im lazy
-        Coords pos = instrumentedCoordsToCoords(newPos);
-        //instrumentedGridSetLocation(grid, pos.x, pos.y, instrumentedGridGetLocation());
-        // TODOL Move the agent
-//        grid.setLocation(newPos.x, newPos.y, grid.getLocation(initial.x, initial.y));
-//        grid.setLocation(initial.x, initial.y, new GridLocation(LocationType.EMPTY));
-//        initial.x = newPos.x;
-//        initial.y = newPos.y;
+        instrumentedGridSetLocation(grid, newPos.x, newPos.y, instrumentedGridGetLocation(grid, agent.initial.x, agent.initial.y));
+        instrumentedGridSetLocationEmpty(grid, agent.initial.x, agent.initial.y);
+        agent.initial.x = newPos.x;
+        agent.initial.y = newPos.y;
 
         return used;
     }
