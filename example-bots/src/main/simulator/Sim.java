@@ -1,7 +1,6 @@
 package simulator;
 
-import simulator.algorithms.AStar;
-import simulator.algorithms.BFS;
+import simulator.algorithms.*;
 import simulator.instrumentor.InstrumentedGrid;
 import simulator.instrumentor.Instrumentor;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -61,7 +60,7 @@ public class Sim {
             int totalWork = 0;
             while (!agentPos.equals(goalPos)) {
                 // System.out.println("Iteration #" + i);
-                //System.out.println(instrumentor.instrumentedGridToString(grid));
+                // System.out.println(instrumentor.instrumentedGridToString(grid));
                 int work = instrumentor.moveAgent(agent, grid, algo);
                 // System.out.println("Move work " + work);
 
@@ -74,7 +73,7 @@ public class Sim {
             }
 
             results.add(totalWork);
-            System.out.println("Iteration " + results.size());
+            // System.out.println("Iteration " + results.size());
         } while (confidenceIntervalPointEstimate(results) > 0.1 || results.size() < 50);
 
         return confidenceInterval(results);
@@ -92,7 +91,7 @@ public class Sim {
         // Instrumentor instrumentor = new Instrumentor();
         // Class<?> currentAlgo = BFS.class;
 
-        Class<?>[] algos = {BFS.class, AStar.class};
+        Class<?>[] algos = {BFS.class, AStar.class, /*DFS.class,*/ Dijkstras.class, /*IDDFS.class*/};
         for (Class<?> algo : algos) {
             // TODO Adjust this and change the rows/cols and congestion to make pretty graphs
             double[] interval = simulateUntilConfident(algo, 0.05, 50, 50);
