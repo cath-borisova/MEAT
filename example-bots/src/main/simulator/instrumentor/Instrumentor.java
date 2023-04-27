@@ -118,6 +118,18 @@ public class Instrumentor {
         }
     }
 
+    public InstrumentedGrid newInstrumentedGrid(long seed, double congestion, int rows, int columns) {
+        Class<?> gridClass = getGridClass();
+        try {
+            return new InstrumentedGrid(gridClass.getDeclaredConstructor(long.class, double.class, int.class, int.class)
+                    .newInstance(seed, congestion, rows, columns));
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                | NoSuchMethodException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public InstrumentedCoords newInstrumentedCoords(int x, int y) {
         Class<?> coordsClass = getCoordsClass();
         try {

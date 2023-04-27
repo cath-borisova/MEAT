@@ -19,13 +19,35 @@ public class Grid {
     final int MAX_SIZE = 25;
     final int MIN_SIZE = 5;
 
+    public Grid(long seed, double congestion, int rows, int columns) {
+
+        this.rng = new Random(seed);
+
+        this.rows = rows;
+        this.columns = columns;
+
+        // Generate two random numbers to make the seed equal to that of the random size
+        randomIntInRange(rng, MAX_SIZE, MIN_SIZE);
+        randomIntInRange(rng, MAX_SIZE, MIN_SIZE);
+
+        this.obstacles = (int) Math.round(rows * columns * congestion);
+        this.world = new GridLocation[rows][columns];
+
+        initializeGrid();
+    }
+
     public Grid(long seed, double congestion) {
         this.rng = new Random(seed);
+
         this.rows = randomIntInRange(rng, MAX_SIZE, MIN_SIZE);
         this.columns = randomIntInRange(rng, MAX_SIZE, MIN_SIZE);
         this.obstacles = (int) Math.round(rows * columns * congestion);
         this.world = new GridLocation[rows][columns];
 
+        initializeGrid();
+    }
+
+    private void initializeGrid() {
         // Set agent location
         this.agentPos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
         this.world[this.agentPos.x][this.agentPos.y] = new GridLocation(LocationType.AGENT, 0);
@@ -42,10 +64,10 @@ public class Grid {
             Coords obstaclePos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
             while (this.world[obstaclePos.x][obstaclePos.y] != null) {
                 obstaclePos = new Coords(rng.nextInt(rows), rng.nextInt(columns));
-            } 
+            }
             this.world[obstaclePos.x][obstaclePos.y] = new GridLocation(LocationType.OBSTACLE, OBSTACLE_COST);
         }
-        
+
         // Randomize the map
         LocationType[] options = {LocationType.EMPTY, LocationType.RUBBLE};
         for (int i = 0; i < rows; i++) {
@@ -54,7 +76,7 @@ public class Grid {
                     LocationType type = options[rng.nextInt(options.length)];
                     if (type == LocationType.RUBBLE) {
                         this.world[i][j] = new GridLocation(
-                            type, randomIntInRange(rng, MAX_RUBBLE, MIN_RUBBLE)
+                                type, randomIntInRange(rng, MAX_RUBBLE, MIN_RUBBLE)
                         );
                     } else {
                         this.world[i][j] = new GridLocation(type, 0);
@@ -62,7 +84,6 @@ public class Grid {
                 }
             }
         }
-
     }
 
     private int randomIntInRange(Random rng, int max, int min) {
