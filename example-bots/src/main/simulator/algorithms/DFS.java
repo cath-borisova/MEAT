@@ -11,7 +11,7 @@ public class DFS implements Algo {
     }
     public Coords depthFirstSearch(Grid grid, Coords initial, Coords goal, int visRadius){
         Stack<LinkedList<Coords>> s = new Stack<>();
-        boolean [] [] visited = new boolean [grid.world.length][grid.world[0].length];
+        boolean [] [] visited = new boolean [grid.world.length+1][grid.world[0].length+1];
         LinkedList<Coords> path = new LinkedList<>();
         path.add(initial);
         s.add(path);
