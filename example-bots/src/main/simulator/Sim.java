@@ -61,7 +61,7 @@ public class Sim {
             int totalWork = 0;
             while (!agentPos.equals(goalPos)) {
                 // System.out.println("Iteration #" + i);
-                // System.out.println(instrumentor.instrumentedGridToString(grid));
+                //System.out.println(instrumentor.instrumentedGridToString(grid));
                 int work = instrumentor.moveAgent(agent, grid, algo);
                 // System.out.println("Move work " + work);
 
@@ -74,8 +74,8 @@ public class Sim {
             }
 
             results.add(totalWork);
-            // System.out.println("Iteration " + results.size());
-        } while (confidenceIntervalPointEstimate(results) > 0.05 || results.size() < 50);
+            System.out.println("Iteration " + results.size());
+        } while (confidenceIntervalPointEstimate(results) > 0.1 || results.size() < 50);
 
         return confidenceInterval(results);
     }
@@ -95,7 +95,7 @@ public class Sim {
         Class<?>[] algos = {BFS.class, AStar.class};
         for (Class<?> algo : algos) {
             // TODO Adjust this and change the rows/cols and congestion to make pretty graphs
-            double[] interval = simulateUntilConfident(algo, 0.05, 10, 10);
+            double[] interval = simulateUntilConfident(algo, 0.05, 50, 50);
             System.out.println("Confidence interval for " + algo.getSimpleName() + " " + interval[0] + " " + interval[1]);
             System.out.println("Mean for " + algo.getSimpleName() + " " + confidenceToMean(interval));
         }
