@@ -58,21 +58,27 @@ public class Sim {
             Agent agent = new Agent(10000, agentPos, goalPos);
             int i = 0;
             int totalWork = 0;
+            boolean broken = false;
             while (!agentPos.equals(goalPos)) {
                 // System.out.println("Iteration #" + i);
+                // System.out.println("AgentPos: " + agentPos);
+                // System.out.println("GoalPos: " + goalPos);
                 // System.out.println(instrumentor.instrumentedGridToString(grid));
                 int work = instrumentor.moveAgent(agent, grid, algo);
                 // System.out.println("Move work " + work);
 
-                totalWork += work;
                 if (i > 10000) {
                     System.out.println("Infinite loop detected");
+                    broken = true;
                     break;
                 }
+                totalWork += work;
                 i++;
             }
 
-            results.add(totalWork);
+            if (!broken) {
+                results.add(totalWork);
+            }
             // System.out.println("Iteration " + results.size());
         } while (confidenceIntervalPointEstimate(results) > 0.1 || results.size() < 50);
 
@@ -91,7 +97,7 @@ public class Sim {
         // Instrumentor instrumentor = new Instrumentor();
         // Class<?> currentAlgo = BFS.class;
 
-        Class<?>[] algos = {BFS.class, AStar.class, /*DFS.class,*/ Dijkstras.class, /*IDDFS.class*/};
+        Class<?>[] algos = {Bug.class};
         for (Class<?> algo : algos) {
             // TODO Adjust this and change the rows/cols and congestion to make pretty graphs
             double[] interval = simulateUntilConfident(algo, 0.05, 50, 50);

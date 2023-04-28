@@ -29,4 +29,12 @@ public class Coords {
         return this.x == otherCoords.x && this.y == otherCoords.y;
     }
 
+    @Override
+    public String toString() {
+        return "Coords{" +
+                "x=" + x +
+                ", y=" + y +
+                ", pathCost=" + pathCost +
+                '}';
+    }
 }
