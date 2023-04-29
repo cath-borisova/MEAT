@@ -49,7 +49,7 @@ public class BFS implements Algo{
         }
 
         // Means goal wasn't found
-        return null;
+        return new Coords(initial.x, initial.y);
     }
 
     // BFS Ignores rubble since there is no heuristic involved

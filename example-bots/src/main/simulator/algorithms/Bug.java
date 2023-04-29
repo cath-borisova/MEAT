@@ -8,10 +8,10 @@ public class Bug implements Algo{
         int dy = goal.y - initial.y;
         dx = dx == 0 ? 0 : dx > 0 ? 1 : -1;
         dy = dy == 0 ? 0 : dy > 0 ? 1 : -1;
-        return bugMove(grid, initial.x, initial.y, dx, dy);
+        return bugMove(grid, initial.x, initial.y, dx, dy, 0);
     }
 
-    private Coords bugMove(Grid grid, int x, int y, int dx, int dy) {
+    private Coords bugMove(Grid grid, int x, int y, int dx, int dy, int depth) {
         int newX = x + dx;
         int newY = y + dy;
 
@@ -25,7 +25,8 @@ public class Bug implements Algo{
 
         int newDX = -dy;
         int newDY = dx;
-        return bugMove(grid, x, y, newDX, newDY);
+
+        return depth < 16 ? bugMove(grid, x, y, newDX, newDY, depth + 1) : new Coords(x, y);
     }
 
     private boolean inBounds(Grid grid, int x, int y) {

@@ -68,7 +68,7 @@ public class Sim {
                 // System.out.println("Move work " + work);
 
                 if (i > 10000) {
-                    System.out.println("Infinite loop detected");
+                    // System.out.println("Infinite loop detected");
                     broken = true;
                     break;
                 }
@@ -97,12 +97,26 @@ public class Sim {
         // Instrumentor instrumentor = new Instrumentor();
         // Class<?> currentAlgo = BFS.class;
 
-        Class<?>[] algos = {Bug.class};
+        Class<?>[] algos = {BFS.class, AStar.class, Dijkstras.class, Bug.class};
+
         for (Class<?> algo : algos) {
-            // TODO Adjust this and change the rows/cols and congestion to make pretty graphs
-            double[] interval = simulateUntilConfident(algo, 0.05, 50, 50);
-            System.out.println("Confidence interval for " + algo.getSimpleName() + " " + interval[0] + " " + interval[1]);
-            System.out.println("Mean for " + algo.getSimpleName() + " " + confidenceToMean(interval));
+            // Varying Congestion
+            System.out.println("Algorithm " + algo.getSimpleName());
+            double[] congestions = {0.0, 0.1, 0.2, 0.3, 0.4};
+            for (double congestion : congestions) {
+                System.out.println("Congestion " + congestion);
+                double[] interval = simulateUntilConfident(algo, congestion, 25, 25);
+                System.out.println("Confidence interval for " + algo.getSimpleName() + " " + interval[0] + " " + interval[1]);
+                System.out.println("Mean for " + algo.getSimpleName() + " " + confidenceToMean(interval));
+            }
+
+            int[] sizes = {10, 25, 50, 100};
+            for (int size : sizes) {
+                System.out.println("Size " + size);
+                double[] interval = simulateUntilConfident(algo, 0.2, size, size);
+                System.out.println("Confidence interval for " + algo.getSimpleName() + " " + interval[0] + " " + interval[1]);
+                System.out.println("Mean for " + algo.getSimpleName() + " " + confidenceToMean(interval));
+            }
         }
     }
 }
