@@ -29,4 +29,8 @@ public class Coords {
         return this.x == otherCoords.x && this.y == otherCoords.y;
     }
 
+    public String toString(){
+        return this.x + " " + this.y;
+    }
+
 }
