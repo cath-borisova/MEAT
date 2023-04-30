@@ -79,7 +79,7 @@ public class Grid {
                                 type, randomIntInRange(rng, MAX_RUBBLE, MIN_RUBBLE)
                         );
                     } else {
-                        this.world[i][j] = new GridLocation(type, 0);
+                        this.world[i][j] = new GridLocation(LocationType.RUBBLE, 1);
                     }
                 }
             }

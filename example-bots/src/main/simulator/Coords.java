@@ -5,7 +5,7 @@ import java.util.Objects;
 public class Coords {
     public int x, y;
     public double pathCost;
-    
+
     public Coords(int x, int y) {
         this.x = x;
         this.y = y;
@@ -29,8 +29,12 @@ public class Coords {
         return this.x == otherCoords.x && this.y == otherCoords.y;
     }
 
-    public String toString(){
-        return this.x + " " + this.y;
+    @Override
+    public String toString() {
+        return "Coords{" +
+                "x=" + x +
+                ", y=" + y +
+                ", pathCost=" + pathCost +
+                '}';
     }
-
 }
