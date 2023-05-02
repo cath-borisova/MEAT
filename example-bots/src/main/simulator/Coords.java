@@ -5,6 +5,8 @@ import java.util.Objects;
 public class Coords {
     public int x, y;
     public double pathCost;
+    public Coords next;
+    
     
     public Coords(int x, int y) {
         this.x = x;
