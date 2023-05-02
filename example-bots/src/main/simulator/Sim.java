@@ -47,15 +47,48 @@ public class Sim {
         return confidenceInterval;
     }
 
+    private static double euclidean(Coords initial, Coords position) {
+        return Math.sqrt(Math.pow((position.x - initial.x), 2) + Math.pow((position.y - initial.y), 2));
+    }
+
+    private static Coords closest(int rows, int columns, Coords agent, Coords goal, int visRadius) {
+        double radius = visRadius;
+        Coords bestPosition = null;
+        double closestDistance = Double.MAX_VALUE;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                Coords position = new Coords(i, j);
+
+                if (grid.getLocation(i, j).getType() == LocationType.OBSTACLE) {
+                    continue;
+                }
+
+                double distance = euclidean(agent, position);
+                if (distance <= radius && distance < closestDistance) {
+                    closestDistance = distance;
+                    bestPosition = position;
+                }
+            }
+        }
+
+        return bestPosition;
+    }   
+
     private static double[] simulateUntilConfident(Class<?> algo, double congestion, int rows, int columns) {
         Instrumentor instrumentor = new Instrumentor();
         List<Integer> results = new ArrayList<>();
         do {
             InstrumentedGrid grid = instrumentor.newInstrumentedGrid(mt.nextLong(), congestion, rows, columns);
-
             Coords agentPos = instrumentor.instrumentedCoordsToCoords(instrumentor.getInstrumentedAgentPos(grid));
             Coords goalPos = instrumentor.instrumentedCoordsToCoords(instrumentor.getInstrumentedGoalPos(grid));
-            Agent agent = new Agent(10000, agentPos, goalPos);
+            int visRadius = 5;
+
+            if (visRadius < euclidean(agentPos, goalPos)) {
+                goalPos = closest(rows, columns, agentPos, goalPos, visRadius);
+            }
+
+            Agent agent = new Agent(visRadius, agentPos, goalPos);
             int i = 0;
             int totalWork = 0;
             boolean broken = false;
