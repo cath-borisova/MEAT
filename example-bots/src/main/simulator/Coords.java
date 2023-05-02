@@ -7,7 +7,6 @@ public class Coords {
     public double pathCost;
     public Coords next;
     
-    
     public Coords(int x, int y) {
         this.x = x;
         this.y = y;
@@ -31,4 +30,12 @@ public class Coords {
         return this.x == otherCoords.x && this.y == otherCoords.y;
     }
 
+    @Override
+    public String toString() {
+        return "Coords{" +
+                "x=" + x +
+                ", y=" + y +
+                ", pathCost=" + pathCost +
+                '}';
+    }
 }

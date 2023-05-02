@@ -64,7 +64,7 @@ public class AStar implements Algo {
         }
 
         // Means goal wasn't found
-        return null;
+        return new Coords(initial.x, initial.y);
     }
 
     // Euclidean distance

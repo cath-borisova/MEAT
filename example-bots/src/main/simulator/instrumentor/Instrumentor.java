@@ -296,6 +296,8 @@ public class Instrumentor {
             newPos = instrumentedCoordsToCoords(new InstrumentedCoords(newPosObj));
         } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
+            if (e instanceof InvocationTargetException)
+                e.getCause().printStackTrace();
             return -1;
         }
         int used = stopMonitor();
