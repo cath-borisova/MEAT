@@ -1,8 +1,6 @@
 package simulator;
 
-import simulator.algorithms.AStar;
-import simulator.algorithms.BFS;
-import simulator.algorithms.DFS;
+import simulator.algorithms.*;
 import simulator.instrumentor.InstrumentedGrid;
 import simulator.instrumentor.Instrumentor;
 import org.apache.commons.math3.random.MersenneTwister;
@@ -70,7 +68,7 @@ public class Sim {
                 // System.out.println("Move work " + work);
 
                 if (i > 10000) {
-                    // System.out.println("Infinite loop detected");
+                    System.out.println("Infinite loop detected");
                     broken = true;
                     break;
                 }
@@ -91,4 +89,20 @@ public class Sim {
         return (interval[0] + interval[1]) / 2.0;
     }
 
+    public static void main(String[] args) {
+        // Dijkstras algo = new Dijkstras(); - TESTED AND WORKS
+        // Coords newPos = algo.dijkstras(grid, agent, goal, 10000);
+        // AStar algo = new AStar(); - TESTED AND WORKS
+        // Coords newPos = algo.astar(grid, agent, goal, 10000);
+        // Instrumentor instrumentor = new Instrumentor();
+        // Class<?> currentAlgo = BFS.class;
+
+        Class<?>[] algos = {Bug.class, Dijkstras.class, BFS.class, AStar.class};
+        for (Class<?> algo : algos) {
+            // TODO Adjust this and change the rows/cols and congestion to make pretty graphs
+            double[] interval = simulateUntilConfident(algo, 0.05, 50, 50);
+            System.out.println("Confidence interval for " + algo.getSimpleName() + " " + interval[0] + " " + interval[1]);
+            System.out.println("Mean for " + algo.getSimpleName() + " " + confidenceToMean(interval));
+        }
+    }
 }

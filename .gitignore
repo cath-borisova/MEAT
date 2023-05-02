@@ -36,3 +36,10 @@ replay_pid*
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+.gradle/
+!.gradle/buildOutputCleanup/
+!.gradle/7.6/executionHistory/
+!.gradle/7.6/fileHashes/
+!.gradle/7.6/fileHashes/resourceHashesCache.bin
+!.gradle/file-system.probe
